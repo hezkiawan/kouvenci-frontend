@@ -3,13 +3,43 @@ name: Frontend CI/CD Pipeline
 on:
   push:
     branches: ["main"]
+  pull_request:           # <--- Runs tests when you open a PR
+    branches: ["main"]
 
 env:
   IMAGE_NAME: kouvenci-frontend
 
 jobs:
-  build-and-push:
+  # ==================================================
+  # JOB 1: TEST / BUILD CHECK (The Gatekeeper)
+  # ==================================================
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Build Check
+        run: npm run build  # If this fails, the pipeline stops here!
+
+  # ==================================================
+  # JOB 2: BUILD & DEPLOY (Only runs if Test passes)
+  # ==================================================
+  build-and-push:
+    needs: test           # <--- Critical: Waits for 'test' to pass
+    runs-on: ubuntu-latest
+    # Only build docker images on main push, not on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
     permissions:
       contents: read
       packages: write
@@ -30,7 +60,7 @@ jobs:
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_ID=ghcr.io/$OWNER/$IMAGE_NAME
 
-          # FIX: Added "sha-" prefix here to match the NEW_TAG variable below
+          # Build with "sha-" prefix to match the Manifest update script
           docker build . --file Dockerfile \
             --tag $IMAGE_ID:sha-${{ github.sha }} \
             --tag $IMAGE_ID:latest
@@ -46,12 +76,15 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "GitHub Actions"
 
+          # Clone the Infrastructure Repo
           git clone https://x-access-token:${PERSONAL_ACCESS_TOKEN}@github.com/hezkiawan/kouvenci-infra.git
           cd kouvenci-infra
 
-          # This line is correct (targets frontend)
+          # Update the frontend image tag
+          # Note: We use the 'sha-' prefix in NEW_TAG to match the image we just pushed
           sed -i "s|image: ghcr.io/hezkiawan/kouvenci-frontend:.*|image: ghcr.io/hezkiawan/kouvenci-frontend:$NEW_TAG|g" k8s-manifests.yaml
 
+          # Commit and Push
           git add k8s-manifests.yaml
           git commit -m "ci: update frontend image to $NEW_TAG"
           git push
