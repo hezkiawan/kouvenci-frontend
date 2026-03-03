@@ -59,7 +59,7 @@ export default function Home() {
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700 p-4 shadow-md">
         <h1 className="text-xl font-bold text-green-400 tracking-wide flex items-center gap-2">
-          <span className="text-2xl">🤖</span> KouvenCI Enterprise <span className="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full border border-green-700">SECURE</span>
+          <span className="text-2xl">🤖</span> KouvenCI <span className="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full border border-green-700">SECURE</span>
         </h1>
       </header>
 
