@@ -30,8 +30,9 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // 2. Call our Go Backend (which talks to Vault & Gemini)
-      const res = await fetch("http://localhost:8080/api/chat", {
+      // 2. Call our Go Backend via Ingress (Relative Path)
+      // This routes through the K8s Ingress rule: /api -> Backend Service
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMsg.content }),
@@ -45,7 +46,7 @@ export default function Home() {
       const aiMsg: Message = { role: "ai", content: data.response };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
-      const errorMsg: Message = { role: "ai", content: "⚠️ Error: Could not reach Kouventi Backend." };
+      const errorMsg: Message = { role: "ai", content: "⚠️ Error: Could not reach KouvenCI Backend. Check Ingress/Pod logs." };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
@@ -58,7 +59,7 @@ export default function Home() {
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700 p-4 shadow-md">
         <h1 className="text-xl font-bold text-green-400 tracking-wide flex items-center gap-2">
-          <span className="text-2xl">🤖</span> Kouventi Enterprise <span className="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full border border-green-700">SECURE</span>
+          <span className="text-2xl">🤖</span> KouvenCI Enterprise <span className="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full border border-green-700">SECURE</span>
         </h1>
       </header>
 
